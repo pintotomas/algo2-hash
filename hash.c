@@ -248,6 +248,11 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
     return insertado;
     }
     
+
+/*aca esta las funciones, de todas maneras hay algunas cosas que no estoy seguro si funcionarian asi en este hash y tendria
+que dar una nueva revisada para ver de mejorar unas cosas, a la manana las reviso.*/
+
+
     
 /* Destruye la estructura liberando la memoria pedida y llamando a la función
  * destruir para cada par (clave, dato).
