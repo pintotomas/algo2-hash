@@ -262,8 +262,8 @@ que dar una nueva revisada para ver de mejorar unas cosas, a la manana las revis
 void hash_destruir(hash_t *hash){
 	size_t pos = encontrar_proximo_primo(0,hash->capacidad); //usar iter para iterar por hash?
 	while(hash->cantidad_elementos != 0){
-		if(hash->tabla[pos]->clave != NULL){ //otro criterio para saber si hay un elem en esa pos?
-			hash_borrar(hash, hash->tabla[pos]->clave);
+		if(hash->tabla[pos].clave != NULL){ //otro criterio para saber si hay un elem en esa pos?
+			hash_borrar(hash, hash->tabla[pos].clave);
 		}
 		pos = encontrar_proximo_primo(pos,hash->capacidad);
 	}
@@ -281,7 +281,7 @@ void hash_destruir(hash_t *hash){
 void *hash_borrar(hash_t *hash, const char *clave){
 	void* dato = hash_obtener(hash,clave);
 	unsigned long posicion = hash_generar_clave(clave,hash->capacidad);
-	hash->como_destruir(hash->tabla[pos]->valor);
+	hash->como_destruir(hash->tabla[pos].valor);
 	free(hash->tabla[pos]);
 	hash->cantidad_elementos--;
 	return dato;
@@ -292,7 +292,7 @@ void *hash_borrar(hash_t *hash, const char *clave){
  */
 bool hash_pertenece(const hash_t *hash, const char *clave){
 	unsigned long pos = hash_generar_clave(clave,hash->capacidad);
-	if(hash->tabla[pos]->clave == clave){
+	if(hash->tabla[pos].clave == clave){
 		return true;
 	}
 	return false;
