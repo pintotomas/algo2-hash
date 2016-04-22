@@ -247,4 +247,49 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 		}
     return insertado;
     }
+    
+    
+/* Destruye la estructura liberando la memoria pedida y llamando a la función
+ * destruir para cada par (clave, dato).
+ * Pre: La estructura hash fue inicializada
+ * Post: La estructura hash fue destruida
+ */
+void hash_destruir(hash_t *hash){
+	size_t pos = encontrar_proximo_primo(0,hash->capacidad); //usar iter para iterar por hash?
+	while(hash->cantidad_elementos != 0){
+		if(hash->tabla[pos]->clave != NULL){ //otro criterio para saber si hay un elem en esa pos?
+			hash_borrar(hash, hash->tabla[pos]->clave);
+		}
+		pos = encontrar_proximo_primo(pos,hash->capacidad);
+	}
+	free(hash->tabla);
+	free(hash);
+}
+
+
+/* Borra un elemento del hash y devuelve el dato asociado.  Devuelve
+ * NULL si el dato no estaba.
+ * Pre: La estructura hash fue inicializada
+ * Post: El elemento fue borrado de la estructura y se lo devolvió,
+ * en el caso de que estuviera guardado.
+ */
+void *hash_borrar(hash_t *hash, const char *clave){
+	void* dato = hash_obtener(hash,clave);
+	unsigned long posicion = hash_generar_clave(clave,hash->capacidad);
+	hash->como_destruir(hash->tabla[pos]->valor);
+	free(hash->tabla[pos]);
+	hash->cantidad_elementos--;
+	return dato;
+}
+
+/* Determina si clave pertenece o no al hash.
+ * Pre: La estructura hash fue inicializada
+ */
+bool hash_pertenece(const hash_t *hash, const char *clave){
+	unsigned long pos = hash_generar_clave(clave,hash->capacidad);
+	if(hash->tabla[pos]->clave == clave){
+		return true;
+	}
+	return false;
+}
 
