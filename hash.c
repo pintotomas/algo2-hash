@@ -1,18 +1,15 @@
-
-char *strdup(const char *old);
-char *strdup(const char *old) {
-    char *new;
-    if((new = malloc(strlen(old) + 1)) == NULL){
-        return NULL;
-        }
-    
-    strcpy(new, old);
-    return new;
-}
+#include <string.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include "hash.h"
+#include <stdio.h>
+#define TAMANO_INICIAL 13
+#define TRIPLE 3
 
 
 //Devuelve true si el numero recibido por parametro es primo, caso contrario, false
 bool es_primo(size_t n);
+
 bool es_primo(size_t n){
 	size_t i;
 	for (i = 2; i < n; i++){ //ya se que es divisible por si mismo y por 1
@@ -29,7 +26,7 @@ bool es_primo(size_t n){
 size_t encontrar_proximo_primo(size_t principio, size_t fin){
 
 size_t encontrar_proximo_primo(size_t principio, size_t fin);
-	size_t primo_encontrado;
+	size_t primo_encontrado = principio;
 	size_t j;
 	for(j = principio+1; j <= fin; j++){ //asegurarse de que siempre hay un primo entre principio y fin
 		if (es_primo(j)){
@@ -40,6 +37,19 @@ size_t encontrar_proximo_primo(size_t principio, size_t fin);
 	return primo_encontrado;
 	}
 			
+
+//Recibe una cadena y devuelve una copia de la misma
+char *strdup(const char *old);
+
+char *strdup(const char *old) {
+    char *new;
+    if((new = malloc(strlen(old) + 1)) == NULL){
+        return NULL;
+        }
+    
+    strcpy(new, old);
+    return new;
+}
 	
 unsigned long djb2(const char *str);
 
@@ -56,7 +66,10 @@ unsigned long djb2(const char *str){
 	return hash;
 }
 
-unsigned long hash_generar_clave(const char clave[],size_t tam);
+//Recibe una clave y el tamaño del hash, y devuelve la posicion en la que
+//Se puede encontrar la clave en el hash.
+//Pre: El hash fue craedo.
+unsigned long hash_generar_clave(const char clave[],size_t tam_hash);
 
 unsigned long hash_generar_clave(const char clave[],size_t tam_hash){
 	size_t longitud_str = strlen(clave);
@@ -69,11 +82,36 @@ unsigned long hash_generar_clave(const char clave[],size_t tam_hash){
 	return hash_key%tam_hash;
 	}
 
+//Incrementa el iterador de un ciclo a el valor siguiente.
+//Si el valor siguiente es igual al limite, iterador pasara a valer 0.
+void incrementar_iterador (unsigned long* iterador, size_t limite);
+
+void incrementar_iterador (unsigned long* iterador, size_t limite){
+	*iterador+=1;
+	if (*iterador == limite){
+		*iterador = 0;
+		}
+	}
+
 typedef struct nodo { 
     const char *clave;
 	void *valor;
 	bool borrado;
 	} nodo_hash_t;
+
+//Inicializa los nodos al crear la tabla de hash
+//Pre: la tabla fue creada.
+void inicializar_nodos(nodo_hash_t* hash,size_t cantidad_nodos);
+
+void inicializar_nodos(nodo_hash_t* tabla_hash,size_t cantidad_nodos){
+    size_t k;
+    for(k = 0; k < cantidad_nodos; k++){
+    
+		tabla_hash[k].clave = NULL;
+		tabla_hash[k].valor = NULL;
+		tabla_hash[k].borrado = false;
+        }
+    }
 
 typedef struct hash {
 	nodo_hash_t *tabla;
@@ -82,16 +120,23 @@ typedef struct hash {
 	void (*como_destruir)(void*);
 	} hash_t;
 
+//Devuelve true si la relacion entre los elementos del hash y la capacidad actual
+//del hash es mas grande que una constante 
+//ya definida 
+//Pre: El hash fue creado. 
 bool hash_capacidad_excedente(hash_t* hash);
 
 bool hash_capacidad_excedente(hash_t* hash){
-	bool capacidad_excedente = false;
+bool capacidad_excedente = false;
 	if (((hash->capacidad != TAMANO_INICIAL) && (hash->capacidad > TAMANO_INICIAL)) && (((float)hash->cantidad_elementos) <= (((float)1/(2*TRIPLE)) * (float)hash->capacidad))){
 		capacidad_excedente = true;
 		}
 	
 	return capacidad_excedente;
 	}
+
+//Devuelve true si el factor de carga del hash es mas alto que una constante ya definida  
+//Pre: El hash fue creado.
 bool hash_sobrecargara(hash_t* hash);
 
 bool hash_sobrecargara(hash_t* hash){	
@@ -104,17 +149,9 @@ bool hash_sobrecargara(hash_t* hash){
 		}
 	return sobrecargara;
 	}
-void inicializar_nodos(nodo_hash_t* hash,size_t cantidad_nodos);
 
-void inicializar_nodos(nodo_hash_t* tabla_hash,size_t cantidad_nodos){
-    size_t k;
-    for(k = 0; k < cantidad_nodos; k++){
-    
-        tabla_hash[k].clave = NULL;
-		tabla_hash[k].valor = NULL;
-		tabla_hash[k].borrado = false;
-        }
-    }
+//Asigna en la posicion pos de la tabla, la clave y el dato recibidos.
+//Pre: La tabla fue creada.
 bool hash_asignar(nodo_hash_t *tabla_hash, const char *clave, void *dato, unsigned long pos);
 
 bool hash_asignar(nodo_hash_t *tabla_hash, const char *clave, void *dato, unsigned long pos){
@@ -123,15 +160,10 @@ bool hash_asignar(nodo_hash_t *tabla_hash, const char *clave, void *dato, unsign
     tabla_hash[pos].clave = clave;
 	return true;
 	}
-void incrementar_iterador (unsigned long* iterador, size_t limite);
 
-void incrementar_iterador (unsigned long* iterador, size_t limite){
-	*iterador+=1;
-	if (*iterador == limite){
-		*iterador = 0;
-		}
-	}
-
+//Asigna un par clave:valor de la tabla de hash anterior a
+//la nueva tabla de hash.
+//Pre: El hash fue redimensionado.
 void asignar_a_nueva_tabla(nodo_hash_t* tabla_hash_viejo, size_t pos_actual, nodo_hash_t* tabla_hash_nuevo, size_t nuevo_tamano);
 
 void asignar_a_nueva_tabla(nodo_hash_t* tabla_hash_viejo, size_t pos_actual, nodo_hash_t* tabla_hash_nuevo, size_t nuevo_tamano){
@@ -147,8 +179,10 @@ void asignar_a_nueva_tabla(nodo_hash_t* tabla_hash_viejo, size_t pos_actual, nod
 		}		
 	}									
 
+//Al redimensionar el hash, asigna las claves:valores de la tabla de hash anterior a
+//la nueva tabla de hash.
+//Pre: El hash fue redimensionado.
 void reubicar(nodo_hash_t* tabla_hash_viejo, nodo_hash_t* tabla_hash_nuevo,size_t viejo_tamano, size_t nuevo_tamano);
-
 void reubicar(nodo_hash_t* tabla_hash_viejo, nodo_hash_t* tabla_hash_nuevo,size_t viejo_tamano, size_t nuevo_tamano){
 	size_t pos_actual = 0;	
 	while (pos_actual < viejo_tamano){
@@ -164,6 +198,8 @@ void reubicar(nodo_hash_t* tabla_hash_viejo, nodo_hash_t* tabla_hash_nuevo,size_
 		}	
 	}
 
+//Redimensiona el hash.
+//Pre: El hash sobrecargo/su relacion entre cantidad de elementos y capacidad es muy chica
 bool hash_redimensionar(hash_t* hash, size_t tamano);
 
 bool hash_redimensionar(hash_t* hash, size_t tamano){
@@ -181,7 +217,6 @@ bool hash_redimensionar(hash_t* hash, size_t tamano){
 	hash->capacidad = tamano;
 	return redimensiono;
 	}
-
 
 hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
 	hash_t* nuevo_hash = malloc(sizeof(hash_t));
@@ -205,6 +240,27 @@ size_t hash_cantidad(const hash_t *hash){
     return hash->cantidad_elementos;
     }
 
+void hash_destruir(hash_t *hash){
+	size_t pos_actual = 0;
+	while (pos_actual < hash->capacidad){
+		if (hash->tabla[pos_actual].clave){
+			free((void*)hash->tabla[pos_actual].clave);
+			if (!hash->tabla[pos_actual].borrado && hash->como_destruir){
+				hash->como_destruir(hash->tabla[pos_actual].valor);
+				}
+			}
+		pos_actual++;
+		}
+    free(hash->tabla);
+    free(hash);
+    }
+
+
+
+//Reemplaza el dato de una clave que ya habia sido asignado en el hash, destruyendo el dato
+//anterior si es necesario.
+//En el caso en el que la clave habia sido borrada, actualiza los elementos del hash
+//Pre: El hash fue creado y la tabla en la posicion pos ya estaba en uso.
 bool reemplazar_clave_actual(hash_t *hash, const char *clave_copia, void *dato, unsigned long posicion);
 
 bool reemplazar_clave_actual(hash_t *hash, const char *clave_copia, void *dato, unsigned long posicion){
@@ -222,7 +278,6 @@ bool reemplazar_clave_actual(hash_t *hash, const char *clave_copia, void *dato, 
 bool hash_guardar(hash_t *hash, const char *clave, void *dato){
     char *clave_copia = strdup(clave);
 	if (!clave_copia){return false;}
-    //aca primero ver el factor de carga para redimensionar
     if (hash_sobrecargara(hash)){
 		size_t rango_busqueda = 20;
 		size_t nuevo_tamano = encontrar_proximo_primo(TRIPLE*hash->capacidad,(TRIPLE*hash->capacidad)+rango_busqueda);
@@ -232,7 +287,7 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
     unsigned long posicion = hash_generar_clave(clave,hash->capacidad);
     
     while (!insertado){
-		if (!hash->tabla[posicion].clave){ //Esto significa que la clave vale NULL, => esta libre
+		if (!hash->tabla[posicion].clave){ //la clave vale NULL, => esta libre
 			insertado = hash_asignar(hash->tabla,clave_copia,dato,posicion);
 			hash->cantidad_elementos++;
 			}
@@ -247,62 +302,119 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 		}
     return insertado;
     }
-    
 
-/*aca esta las funciones, de todas maneras hay algunas cosas que no estoy seguro si funcionarian asi en este hash y tendria
-que dar una nueva revisada para ver de mejorar unas cosas, a la manana las reviso.*/
+//Busca una clave en la tabla de hash. Devuelve su posicion o -1 si la clave
+//no se encuentra.
+unsigned long hash_buscar(nodo_hash_t *tabla, const char *clave, size_t capacidad_hash);
 
-
-    
-/* Destruye la estructura liberando la memoria pedida y llamando a la función
- * destruir para cada par (clave, dato).
- * Pre: La estructura hash fue inicializada
- * Post: La estructura hash fue destruida
- */
-void hash_destruir(hash_t *hash){
-	unsigned long pos;
-	for(pos = 0, pos < hash->capacidad, pos++){
-		if(hash->tabla[pos].clave){
-			hash_borrar(hash, hash->tabla[pos].clave);
+unsigned long hash_buscar(nodo_hash_t *tabla, const char *clave, size_t capacidad_hash){
+	unsigned long posicion = hash_generar_clave(clave,capacidad_hash);
+	while(tabla[posicion].clave){
+		if(((strcmp(tabla[posicion].clave,clave)) == 0) && !tabla[posicion].borrado){ //Es la misma clave y no fue borrado su contenido anteriormente
+			return posicion;
+			}
+		else{
+			incrementar_iterador(&posicion,capacidad_hash);
+			}
 		}
-		free(hash->tabla[pos]);
+	return -1;
 	}
-	free(hash->tabla);
-	free(hash);
-}
 
-
-/* Borra un elemento del hash y devuelve el dato asociado.  Devuelve
- * NULL si el dato no estaba.
- * Pre: La estructura hash fue inicializada
- * Post: El elemento fue borrado de la estructura y se lo devolvió,
- * en el caso de que estuviera guardado.
- */
 void *hash_borrar(hash_t *hash, const char *clave){
-	if(!hash_redimensionar){
-		return NULL;
-	}
-	void* dato = hash_obtener(hash,clave);
-	unsigned long pos = hash_generar_clave(clave,hash->capacidad);
-	if(hash->como_destruir){
-		hash->como_destruir(hash->tabla[pos].valor);
-	}
-	free(hash->tabla[pos].clave);
-	hash->cantidad_elementos--;
-	return dato;
-}
-
-/* Determina si clave pertenece o no al hash.
- * Pre: La estructura hash fue inicializada
- */
-bool hash_pertenece(const hash_t *hash, const char *clave){
-	unsigned long pos = hash_generar_clave(clave,hash->capacidad);
-	while(hash->tabla[pos].clave){
-		if(hash->tabla[pos].clave == clave){
-			return true;
+	void* dato = NULL;
+	unsigned long pos_dato = hash_buscar(hash->tabla,clave,hash->capacidad);
+	if (pos_dato != -1){
+		dato = hash->tabla[pos_dato].valor;
+		hash->tabla[pos_dato].borrado = true;
+		hash->cantidad_elementos--;
+		}	
+	if (hash_capacidad_excedente(hash)){
+		size_t tercera_parte_capacidad = (size_t)(((float)1/3)*((float)hash->capacidad));
+		const size_t rango_busqueda = 10;
+		size_t nuevo_tam = encontrar_proximo_primo(tercera_parte_capacidad,tercera_parte_capacidad+rango_busqueda);
+		hash_redimensionar(hash,nuevo_tam);
 		}
-		pos++
-	}
-	return false;
-}
+	return dato;
+    }
 
+void *hash_obtener(const hash_t *hash, const char *clave){
+	void* dato = NULL;
+	unsigned long pos_dato = hash_buscar(hash->tabla,clave,hash->capacidad);
+	if (pos_dato != -1){
+		dato = hash->tabla[pos_dato].valor;
+		}
+	return dato;
+    }
+
+bool hash_pertenece(const hash_t *hash, const char *clave){
+	unsigned long pos_dato = hash_buscar(hash->tabla,clave,hash->capacidad);
+	bool pertenece = false;
+	if (pos_dato != -1){
+		pertenece = true;
+		}
+	return pertenece;
+    }
+
+typedef struct hash_iter { const hash_t* hash;
+						   const char* clave_actual;
+						   size_t posicion;
+						   size_t limite;
+						   size_t elementos_a_iterar;
+						   size_t elementos_iterados;
+						 } hash_iter_t;
+
+//Avanza el iterador del hash, segun el caso en el que se encuentre
+//Pre: El iterador fue creado.
+void avanzar_iterador(hash_iter_t* iter, bool no_primera_iteracion);
+
+void avanzar_iterador(hash_iter_t* iter, bool no_primera_iteracion){
+	if (no_primera_iteracion && (iter->posicion < iter->limite)){
+		iter->posicion++; //si no, al evaluar en el while queda en el mismo elemento
+		}
+	while((!iter->hash->tabla[iter->posicion].clave || iter->hash->tabla[iter->posicion].borrado) && (iter->posicion < iter->limite)){ 
+		iter->posicion++;
+		}
+	iter->clave_actual = iter->hash->tabla[iter->posicion].clave;
+	if (iter->elementos_iterados < (iter->elementos_a_iterar+1)){
+		iter->elementos_iterados++;
+		}
+	}
+
+hash_iter_t *hash_iter_crear(const hash_t *hash){
+	hash_iter_t* nuevo_iter = malloc(sizeof(hash_iter_t));
+	if (!nuevo_iter){
+		return NULL;
+		}
+	nuevo_iter->hash = hash;
+	nuevo_iter->limite = hash->capacidad-1;
+	nuevo_iter->posicion = 0;
+	nuevo_iter->elementos_a_iterar = hash->cantidad_elementos;
+	nuevo_iter->elementos_iterados = 0;
+	avanzar_iterador(nuevo_iter,false);	
+	return nuevo_iter;
+	}
+
+bool hash_iter_avanzar(hash_iter_t *iter){
+	bool avanzo = false;
+	size_t pos_vieja = iter->posicion;
+	avanzar_iterador(iter,true);
+	if (pos_vieja != iter->posicion){
+		avanzo = true;
+		}
+	if (avanzo == false){
+		iter->clave_actual = NULL;
+		}
+	return avanzo;
+	}
+
+const char *hash_iter_ver_actual(const hash_iter_t *iter){
+	return iter->clave_actual;
+	}
+
+bool hash_iter_al_final(const hash_iter_t *iter){
+	return (iter->elementos_iterados == (iter->elementos_a_iterar+1));
+	}
+
+void hash_iter_destruir(hash_iter_t* iter){
+	free(iter);
+	}
