@@ -260,12 +260,12 @@ que dar una nueva revisada para ver de mejorar unas cosas, a la manana las revis
  * Post: La estructura hash fue destruida
  */
 void hash_destruir(hash_t *hash){
-	size_t pos = encontrar_proximo_primo(0,hash->capacidad); //usar iter para iterar por hash?
-	while(hash->cantidad_elementos != 0){
-		if(hash->tabla[pos].clave != NULL){ //otro criterio para saber si hay un elem en esa pos?
+	unsigned long pos;
+	for(pos = 0, pos < hash->capacidad, pos++){
+		if(hash->tabla[pos].clave){
 			hash_borrar(hash, hash->tabla[pos].clave);
 		}
-		pos = encontrar_proximo_primo(pos,hash->capacidad);
+		free(hash->tabla[pos]);
 	}
 	free(hash->tabla);
 	free(hash);
@@ -279,10 +279,15 @@ void hash_destruir(hash_t *hash){
  * en el caso de que estuviera guardado.
  */
 void *hash_borrar(hash_t *hash, const char *clave){
+	if(!hash_redimensionar){
+		return NULL;
+	}
 	void* dato = hash_obtener(hash,clave);
-	unsigned long posicion = hash_generar_clave(clave,hash->capacidad);
-	hash->como_destruir(hash->tabla[pos].valor);
-	free(hash->tabla[pos]);
+	unsigned long pos = hash_generar_clave(clave,hash->capacidad);
+	if(hash->como_destruir){
+		hash->como_destruir(hash->tabla[pos].valor);
+	}
+	free(hash->tabla[pos].clave);
 	hash->cantidad_elementos--;
 	return dato;
 }
@@ -292,8 +297,11 @@ void *hash_borrar(hash_t *hash, const char *clave){
  */
 bool hash_pertenece(const hash_t *hash, const char *clave){
 	unsigned long pos = hash_generar_clave(clave,hash->capacidad);
-	if(hash->tabla[pos].clave == clave){
-		return true;
+	while(hash->tabla[pos].clave){
+		if(hash->tabla[pos].clave == clave){
+			return true;
+		}
+		pos++
 	}
 	return false;
 }
